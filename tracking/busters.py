@@ -310,8 +310,10 @@ class BustersGameRules:
         """
         Checks to see whether it is time to end the game.
         """
-        if state.isWin(): self.win(state, game)
-        if state.isLose(): self.lose(state, game)
+        if state.isWin():
+            self.win(state, game)
+        if state.isLose():
+            self.lose(state, game)
 
     def win( self, state, game ):
         game.gameOver = True

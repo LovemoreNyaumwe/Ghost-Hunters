@@ -10,7 +10,7 @@
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
-
+import random
 
 import util
 from game import Agent
@@ -163,4 +163,18 @@ class GreedyBustersAgent(BustersAgent):
             [beliefs for i, beliefs in enumerate(self.ghostBeliefs)
              if livingGhosts[i+1]]
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        ghostPositions = []
+        for distribution in livingGhostPositionDistributions:
+            probs = distribution.values()
+            positions = distribution.keys()
+            maxProb = max(probs)
+            positionProb = probs.index(maxProb)
+            ghostPositions.append(positions[positionProb])
+        bestDistances = [self.distancer.getDistanceOnGrid(pacmanPosition, ghostPosition) for ghostPosition in ghostPositions]
+        bestDistance = min(bestDistances)
+        bestIndices = [index for index in range(len(bestDistances)) if bestDistances[index] == bestDistance]
+        chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
+        for action in legal:
+            successorPosition = Actions.getSuccessor(pacmanPosition, action)
+            if self.distancer.getDistanceOnGrid(successorPosition, ghostPositions[chosenIndex]) < bestDistance:
+                return action
