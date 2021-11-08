@@ -272,6 +272,8 @@ class ParticleFilter(InferenceModule):
         # print self.numParticles
         # print self.legalPositions
         # making an empty list that will hold all my particles
+        # self.setNumParticles(20000)
+        # print self.numParticles
         self.particles = []
         # making a counter that will show how many particles I still have to allocate
         particlesLeft = self.numParticles
@@ -332,7 +334,9 @@ class ParticleFilter(InferenceModule):
             # I basically did the same thing as my partner did earlier for exact - so I'm worried that I'm not actually doing partical filtering
             counter = util.Counter()
             belief = self.getBeliefDistribution()
-            for x in self.legalPositions:
+            overlap = set(self.legalPositions) & set(self.particles)
+            for x in overlap:
+                # print x
                 dist = util.manhattanDistance(x, pacmanPosition)
                 counter[x] += emissionModel[dist] * belief[x]
             # https://stackoverflow.com/questions/3525953/check-if-all-values-of-iterable-are-zero
@@ -340,7 +344,6 @@ class ParticleFilter(InferenceModule):
             if all(v == 0 for v in counter.values()):
                 # intitalize uniformly as said in the description
                 self.initializeUniformly(gameState)
-            # handle the special case
             else:
                 # resample all the particles
                 self.particles = self.resample(self.particles, counter)
