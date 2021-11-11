@@ -329,11 +329,13 @@ class ParticleFilter(InferenceModule):
             self.particles = newParticles
         else:
             for x in self.particles:
-                trueDistance = util.manhattanDistance(x, pacmanPosition)
-                allPossible[x] += emissionModel[trueDistance]
+                distance = util.manhattanDistance(x, pacmanPosition)
+                allPossible[x] += emissionModel[distance]
+            #check if all 0
             if allPossible.totalCount() == 0:
                 self.initializeUniformly(gameState)
             else:
+                #resample
                 newParticles = []
                 for i in range(self.numParticles):
                     newParticles.append(util.sample(allPossible))
@@ -451,6 +453,18 @@ class JointParticleFilter:
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        #using the code ffrom above
+        numParticle = self.numParticles
+        positions = list(itertools.product(self.legalPositions, repeat= self.numGhosts))
+        random.shuffle(positions)
+        #fill in my particles
+        self.particles = []
+        while numParticle != 0:
+            for pos in positions:
+                if numParticle != 0:
+                    self.particles.append(pos)
+                    numParticle -= 1
+        # print len(self.particles)
 
     def addGhostAgent(self, agent):
         """
@@ -498,6 +512,43 @@ class JointParticleFilter:
         emissionModels = [busters.getObservationDistribution(dist) for dist in noisyDistances]
 
         "*** YOUR CODE HERE ***"
+        count = util.Counter()
+        #Same as before, but now we just have to account for the fact that there's multiple ghosts. Used helper function.
+        for i in range(self.numGhosts):
+            for x in range(len(self.particles)):
+                if noisyDistances[i] is None:
+                    self.particles[x] = self.getParticleWithGhostInJail(self.particles[x], i)
+
+        #UPDATE METHOD???
+        for particle in self.particles:
+            # print(particle)
+            values = []
+            for ghost in range(self.numGhosts):
+                # checking if it is in jail.
+                if noisyDistances[ghost] != None:
+                    distance = util.manhattanDistance(pacmanPosition, particle[ghost])
+                    values.append(emissionModels[ghost][distance])
+            #https://www.geeksforgeeks.org/python-multiply-numbers-list-3-different-ways/
+            #just multipling the whole list together
+            result = 1
+            for x in values:
+                result = result * x
+            count[particle] += result
+
+        ##Same as before
+        if count.totalCount() == 0:
+            self.initializeParticles()
+            #add the change to jail as described in docstring
+            for i in range(self.numGhosts):
+                for x in range(len(self.particles)):
+                    if noisyDistances[i] is None:
+                        self.particles[x] = self.getParticleWithGhostInJail(self.particles[x], i)
+        #Same as before, resample
+        else:
+            newParticles = []
+            for i in range(self.numParticles):
+                newParticles.append(util.sample(count))
+            self.particles = newParticles
 
     def getParticleWithGhostInJail(self, particle, ghostIndex):
         """
@@ -558,6 +609,11 @@ class JointParticleFilter:
             # now loop through and update each entry in newParticle...
 
             "*** YOUR CODE HERE ***"
+            for x in range(self.numGhosts):
+                newPosDist = getPositionDistributionForGhost(
+                    setGhostPositions(gameState, newParticle), x, self.ghostAgents[x]
+                )
+                newParticle[x] = util.sample(newPosDist)
 
             "*** END YOUR CODE HERE ***"
             newParticles.append(tuple(newParticle))
@@ -565,7 +621,12 @@ class JointParticleFilter:
 
     def getBeliefDistribution(self):
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #Same as before.
+        count = util.Counter()
+        for particle in self.particles:
+            count[particle] += 1
+        count.normalize()
+        return count
 
 # One JointInference module is shared globally across instances of MarginalInference
 jointInference = JointParticleFilter()
